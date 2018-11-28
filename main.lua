@@ -90,7 +90,8 @@ for material, color in pairs(colors) do
 	color[2] = (color[2] + sepia[2])/2
 	color[3] = (color[3] + sepia[3])/2
 	colors2[materialCodes[material]] = color
-	local shadow = {color[1]/2, color[2]/2, color[3]/2, 0.5}
+	local s = 0.7
+	local shadow = {color[1]*s, color[2]*s, color[3]*s, 0.5}
 	shadows[materialCodes[material]] = shadow
 	print(material, unpack(color))
 end
@@ -321,7 +322,7 @@ function love.draw()
 		if cycleIndex == 0 then
 			local x = region.x - 1342 - 1000
 			local y = region.y + 6170 - 1000
-			local scale = .125
+			local scale = 1
 			love.graphics.draw(region.image,x*scale/2 + w/2, y*scale/2 + h/2,0,scale,scale)
 			love.graphics.circle("line", x*scale/2 + region.w*scale/4 + w/2, y*scale/2 + region.w*scale/4 + h/2, region.w*scale/4)
 		elseif i == cycleIndex then
