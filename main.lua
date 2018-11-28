@@ -92,7 +92,7 @@ for material, color in pairs(colors) do
 	colors2[materialCodes[material]] = color
 	local shadow = {color[1]/2, color[2]/2, color[3]/2, 0.5}
 	shadows[materialCodes[material]] = shadow
-
+	print(material, unpack(color))
 end
 
 for i, v in pairs(materialCodes) do
@@ -128,17 +128,19 @@ function loadFile(fname)
 
 	local drawX = 0
 	local drawY = 0
+
 	for line in love.filesystem.lines(fname) do
 		if first then
 			first = false
 
 			regionName, x, y, w, spp = string.match(line, "(%w+)%s(%S+)%s(%S+)%s(%S+)%s(%S+)")
-			region = newRegion(regionName, x, y, w, spp)
+			--region = newRegion(regionName, x, y, w, spp)
+			region = newRegion(regionName, y, -x - w, w, spp)
 			if alreadyGenerated then
 				break
 			end
 		else
-			drawX = 0
+			--[[drawX = 0
 			drawY = drawY + 1
 			region.data[drawY] = {}
 			region.meta[drawY] = {}
@@ -147,6 +149,19 @@ function loadFile(fname)
 				if char == "?" then char = "0" end
 				region.data[drawY][drawX] = char
 				region.meta[drawY][drawX] = metachar
+			end
+			--]]
+			drawX = w/spp + 1
+			drawY = drawY + 1
+			for char, metachar in string.gmatch(line, "(%S)(%w)") do
+				drawX = drawX - 1
+				if char == "?" then char = "0" end
+				if not region.data[drawX] then
+					region.data[drawX] = {}
+					region.meta[drawX] = {}
+				end
+				region.data[drawX][drawY] = char
+				region.meta[drawX][drawY] = metachar
 			end
 		end
 	end
@@ -186,20 +201,65 @@ function newRegion(regionName, x, y, w, spp)
 					love.graphics.setColor(unpack(colors2[char]))
 
 					love.graphics.rectangle("fill",x*2-1,y*2-1,2,2)
-					if self.meta[y][x] == "S" then
-						if char ~= "0" then
+					if self.meta[y][x] == "L" then
+						--do nothing lol
+					elseif self.meta[y][x] == "S" then
+						--[[if char ~= "0" then
 							love.graphics.setColor(unpack(shadows[char]))
 						else
 							local alpha = 1 - math.min(1,math.sqrt((x*spp-self.w/2)^2 + (y*spp-self.h/2)^2) / (self.w/2) )
 							love.graphics.setColor(watercolor[1]/2,watercolor[2]/2,watercolor[3]/2, math.sqrt(alpha)/2)
+						end]]
+
+						local r,g,b = unpack(shadows[char])
+						if char ~= "0" then
+							love.graphics.setColor(r,g,b)
+						else
+							local a = 1 - math.min(1,math.sqrt((x*spp-self.w/2)^2 + (y*spp-self.h/2)^2) / (self.w/2) )
+							love.graphics.setColor(r,g,b,a)
 						end
+
 						if (y + x) % 2 == 0 then
 							love.graphics.points(x*2+1,y*2+1, x*2, y*2)
 						else
 							love.graphics.points(x*2+1,y*2, x*2, y*2+1)
 						end
+					elseif self.meta[y][x] == "B" then
+						local r,g,b = unpack(shadows[char])
+						if char ~= "0" then
+							love.graphics.setColor(r,g,b)
+						else
+							local a = 1 - math.min(1,math.sqrt((x*spp-self.w/2)^2 + (y*spp-self.h/2)^2) / (self.w/2) )
+							love.graphics.setColor(r,g,b,a)
+						end
 
+						love.graphics.points(x*2+1,y*2, x*2, y*2+1,x*2+1,y*2+1)
+					elseif self.meta[y][x] == "H" then
+						local r, g, b = love.graphics.getColor()
+						
+						if char ~= "0" then
+							love.graphics.setColor(math.min(1,r+0.2), math.min(1,g+0.2), math.min(1,b+0.2))
+							love.graphics.points(x*2+1,y*2+1, x*2, y*2)
+						else
+							local a = 1 - math.min(1,math.sqrt((x*spp-self.w/2)^2 + (y*spp-self.h/2)^2) / (self.w/2) )
+							love.graphics.setColor(math.min(1,r+0.1), math.min(1,g+0.2), math.min(1,b+0.3), a)
+							love.graphics.points(x*2+1,y*2)
+						end
+					elseif tonumber(self.meta[y][x]) then
 
+						--DEPTH: NOT USED IN CURRENT VERSION
+						local depth = tonumber(self.meta[y][x])
+						local alpha = 1 - (math.floor(depth*4)/4 + 1)/10
+						local distanceAlpha = 1 - math.min(1,math.sqrt((x*spp-self.w/2)^2 + (y*spp-self.h/2)^2) / (self.w/2) )
+						local r, g, b = unpack(watercolor)
+						local r2 = r/2
+						local g2 = g/2
+						local b2 = b/2
+						r = r*alpha + r2*(1-alpha)
+						g = g*alpha + g2*(1-alpha)
+						b = b*alpha + b2*(1-alpha)
+						love.graphics.setColor(r,g,b, 1)
+						love.graphics.rectangle("fill",x*2-1,y*2-1,2,2)
 					end
 
 					--love.graphics.setColor(colors[char][1]*.5,colors[char][2]*.5,colors[char][3]*.5)
@@ -221,7 +281,7 @@ function newRegion(regionName, x, y, w, spp)
 					end
 					if down and down ~= char and down == "0" then
 						love.graphics.points(x*2, y*2+1, x*2+1, y*2+1)
-					end				
+					end	
 				end
 			end
 		end
@@ -259,7 +319,11 @@ function love.draw()
 		--love.graphics.draw(region.image,region.x/20 + w/2, region.y/20 + h/2,0,0.1,0.1)
 		local cycleIndex = ((index) % (#regions+1)) 
 		if cycleIndex == 0 then
-			love.graphics.draw(region.image,region.x/20 + w/2, region.y/20 + h/2,0,0.1,0.1)
+			local x = region.x - 1342 - 1000
+			local y = region.y + 6170 - 1000
+			local scale = .125
+			love.graphics.draw(region.image,x*scale/2 + w/2, y*scale/2 + h/2,0,scale,scale)
+			love.graphics.circle("line", x*scale/2 + region.w*scale/4 + w/2, y*scale/2 + region.w*scale/4 + h/2, region.w*scale/4)
 		elseif i == cycleIndex then
 			love.graphics.draw(region.image,w/2,h/2,0,1,1,region.w/4, region.h/4)
 
