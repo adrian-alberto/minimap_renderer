@@ -114,6 +114,7 @@ function love.load()
 		loadFile("inputdata/"..v)
 	end
 
+	outputCombined()
 	print(love.timer.getTime() - startTime)
 
 end
@@ -309,6 +310,27 @@ function newRegion(regionName, x, y, w, spp)
 	return r
 end
 
+function outputCombined()
+	local w = 625
+	local h = 625
+	local combinedCanvas = love.graphics.newCanvas(w,h)
+	love.graphics.setCanvas(combinedCanvas)
+	--love.graphics.clear(unpack(watercolor))
+	love.graphics.setColor(1,1,1, 255)
+	love.graphics.setBlendMode("alpha","premultiplied")
+	for i, region in pairs(regions) do
+		local x = region.x - 1342 - 1000
+		local y = region.y + 6170 - 1000
+		local scale = .125
+		love.graphics.draw(region.image,x*scale/2 + w/2, y*scale/2 + h/2,0,scale,scale)
+		--love.graphics.circle("line", x*scale/2 + region.w*scale/4 + w/2, y*scale/2 + region.w*scale/4 + h/2, region.w*scale/4)
+	end
+	love.graphics.setCanvas()
+	local idata = combinedCanvas:newImageData()
+	idata:encode("png", "combined.png")
+	combinedCanvas = nil
+end
+
 function love.draw()
 	local w, h = love.graphics.getDimensions()
 	love.graphics.clear(unpack(watercolor))
@@ -322,7 +344,7 @@ function love.draw()
 		if cycleIndex == 0 then
 			local x = region.x - 1342 - 1000
 			local y = region.y + 6170 - 1000
-			local scale = 1
+			local scale = .125
 			love.graphics.draw(region.image,x*scale/2 + w/2, y*scale/2 + h/2,0,scale,scale)
 			love.graphics.circle("line", x*scale/2 + region.w*scale/4 + w/2, y*scale/2 + region.w*scale/4 + h/2, region.w*scale/4)
 		elseif i == cycleIndex then
